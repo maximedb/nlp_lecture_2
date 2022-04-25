@@ -3,5 +3,3 @@ datasets==2.1.0
 tensorboardX
 sklearn
 huggingface_hub
-notebook.ipynb
-.gitignore
