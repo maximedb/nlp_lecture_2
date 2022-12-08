@@ -1,5 +1,6 @@
 import os
 import json
+import tqdm
 import numpy
 import torch
 import evaluate
@@ -51,7 +52,8 @@ class DataTrainingArguments:
     )
     early_stopping: bool = field(default=False)
     hidden_state_extraction: bool = field(default=False)
-
+    hidden_state_column_name: str = field(default="new_column")
+    upload_dataset_name: str = field(default="new_dataset")
 
 def main():
     """ Main function to train a classifier on any given HuggingFace dataset """
@@ -141,9 +143,21 @@ def main():
     
     if data_args.hidden_state_extraction:
         model = trainer.model
-        with torch.no_grad():
-            for element in tokenized_dataset:
-                print(element)
+        def get_hidden_states(key):
+            hidden_states = []
+            with torch.no_grad():
+                for element in tqdm.tqdm(tokenized_dataset[key], desc=key):
+                    input_ids = torch.tensor([element["input_ids"]], device=model.device)
+                    attention_mask = torch.tensor([element["attention_mask"]], device=model.device)
+                    token_type_ids = torch.tensor([element["token_type_ids"]], device=model.device)
+                    output = model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=True, output_hidden_states=True)
+                    hidden_states.append(output.hidden_states[-1][0, 0, :].cpu().numpy())
+            dataset[key] = dataset[key].add_column(data_args.hidden_state_column_name, hidden_states)
+        get_hidden_states("train")
+        get_hidden_states("validation")
+        get_hidden_states("test")
+        dataset.push_to_hub(data_args.upload_dataset_name, private=True, token=training_args.hub_token)
+
 
     # if needed, perfrom some predictions and save the results somewhere
     if training_args.do_predict:
@@ -159,14 +173,11 @@ def main():
             with open(output_predictions_file, "w") as f:
                 json.dump(predictions, f, ensure_ascii=False)
 
-    kwargs = {
-        "finetuned_from": model_args.model_name_or_path, 
-        "tasks": "text-classification"
-    }
     if training_args.push_to_hub:
-        trainer.push_to_hub(**kwargs)
-    else:
-        trainer.create_model_card(**kwargs)
+        trainer.push_to_hub({
+            "finetuned_from": model_args.model_name_or_path, 
+            "tasks": "text-classification"
+        })
 
 
 if __name__ == "__main__":
