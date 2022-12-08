@@ -1,6 +1,7 @@
 import os
 import json
 import numpy
+import evaluate
 import datasets
 import transformers
 from dataclasses import dataclass, field
@@ -46,6 +47,9 @@ class DataTrainingArguments:
     predict_key: str = field(
         default="test",
         metadata={"help": "The key in each dataset example containing the text"}
+    )
+    early_stopping: bool = field(
+        default=False
     )
 
 
@@ -93,8 +97,9 @@ def main():
     # initiate a collator to combine multiple sequences of different sizes with padding
     data_collator = transformers.DataCollatorWithPadding(tokenizer, padding="longest")
 
-    f1_metric = datasets.load_metric("f1")
-    acc_metric = datasets.load_metric("accuracy")
+    f1_metric = evaluate.load("f1")
+    acc_metric = evaluate.load("accuracy")
+
     def compute_metrics(eval_preds):
         """ compute f1 and accuract given some predictions by the model """
         logits, labels = eval_preds
@@ -102,6 +107,11 @@ def main():
         f1 = f1_metric.compute(predictions=predictions, references=labels)
         accuracy = acc_metric.compute(predictions=predictions, references=labels)
         return {**f1, **accuracy}
+
+    # callbacks
+    callbacks = []
+    if data_args.early_stopping:
+        callbacks = [transformers.EarlyStoppingCallback(early_stopping_patience=3)]
 
     # main object used to train the model, it encapsulte the training loops, placing tensors on devices, etc.
     trainer = transformers.Trainer(
@@ -111,7 +121,8 @@ def main():
         eval_dataset=tokenized_dataset["validation"],
         tokenizer=tokenizer,
         data_collator=data_collator,
-        compute_metrics=compute_metrics
+        compute_metrics=compute_metrics,
+        callbacks=callbacks
     )
 
     # if needed, launch the training and save the model along with the results
