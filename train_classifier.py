@@ -139,7 +139,7 @@ def main():
         trainer.log_metrics("eval", metrics)
         trainer.save_metrics("eval", metrics)
     
-    if training_args.hidden_state_extraction:
+    if data_args.hidden_state_extraction:
         model = trainer.model
         with torch.no_grad():
             for element in tokenized_dataset:
