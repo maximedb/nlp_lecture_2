@@ -1,6 +1,7 @@
 import os
 import json
 import numpy
+import torch
 import evaluate
 import datasets
 import transformers
@@ -48,9 +49,8 @@ class DataTrainingArguments:
         default="test",
         metadata={"help": "The key in each dataset example containing the text"}
     )
-    early_stopping: bool = field(
-        default=False
-    )
+    early_stopping: bool = field(default=False)
+    hidden_state_extraction: bool = field(default=False)
 
 
 def main():
@@ -139,6 +139,12 @@ def main():
         trainer.log_metrics("eval", metrics)
         trainer.save_metrics("eval", metrics)
     
+    if training_args.hidden_state_extraction:
+        model = trainer.model
+        with torch.no_grad():
+            for element in tokenized_dataset:
+                print(element)
+
     # if needed, perfrom some predictions and save the results somewhere
     if training_args.do_predict:
         predict_dataset = tokenized_dataset[data_args.predict_key]
