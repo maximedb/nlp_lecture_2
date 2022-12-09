@@ -54,6 +54,7 @@ class DataTrainingArguments:
     hidden_state_extraction: bool = field(default=False)
     hidden_state_column_name: str = field(default="new_column")
     upload_dataset_name: str = field(default="new_dataset")
+    previous_model_hidden_size: int = field(default=512)
 
 def main():
     """ Main function to train a classifier on any given HuggingFace dataset """
@@ -79,7 +80,8 @@ def main():
     # initiate a new tokenizer
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path, 
-        model_max_length=data_args.max_length
+        model_max_length=data_args.max_length,
+        previous_model_hidden_size=data_args.previous_model_hidden_size
     )
     
     def tokenize_function(example):
