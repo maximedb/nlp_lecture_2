@@ -137,7 +137,7 @@ def main():
 
     # if needed, evaluate the model on the eval_dataset specified in the trainer
     if training_args.do_eval:
-        metrics = trainer.evaluate()
+        metrics = trainer.evaluate(tokenized_dataset["test"])
         trainer.log_metrics("eval", metrics)
         trainer.save_metrics("eval", metrics)
     
