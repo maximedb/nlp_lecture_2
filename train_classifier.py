@@ -75,13 +75,13 @@ def main():
     # initiate a new sequence classification model with the given model and the number of labels
     model = transformers.AutoModelForSequenceClassification.from_pretrained(
         model_args.model_name_or_path, 
-        num_labels=number_of_labels
+        num_labels=number_of_labels,
+        previous_model_hidden_size=data_args.previous_model_hidden_size
     )
     # initiate a new tokenizer
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path, 
         model_max_length=data_args.max_length,
-        previous_model_hidden_size=data_args.previous_model_hidden_size
     )
     
     def tokenize_function(example):
