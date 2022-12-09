@@ -174,10 +174,10 @@ def main():
                 json.dump(predictions, f, ensure_ascii=False)
 
     if training_args.push_to_hub:
-        trainer.push_to_hub({
-            "finetuned_from": model_args.model_name_or_path, 
-            "tasks": "text-classification"
-        })
+        trainer.push_to_hub(
+            finetuned_from=model_args.model_name_or_path,
+            tasks="text-classification"
+        )
 
 
 if __name__ == "__main__":
